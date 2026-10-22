@@ -1,0 +1,13 @@
+{
+  "name": "pomodoro-self-hosted",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Pomodoro self-hosted con perfiles, seguimiento y estadísticas",
+  "scripts": {
+    "setup": "npm --prefix backend install && npm --prefix frontend install",
+    "dev:server": "npm --prefix backend run dev",
+    "dev:web": "npm --prefix frontend run dev",
+    "build": "npm --prefix frontend run build",
+    "start": "npm --prefix backend start"
+  }
+}

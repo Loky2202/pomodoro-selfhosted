@@ -1,0 +1,11 @@
+services:
+  pomodoro:
+    build: .
+    container_name: pomodoro
+    restart: unless-stopped
+    ports:
+      - "${PORT:-3000}:3000"
+    environment:
+      - TZ=${TZ:-UTC}
+    volumes:
+      - ./data:/app/data

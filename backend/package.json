@@ -1,0 +1,17 @@
+{
+  "name": "pomodoro-backend",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "API y servidor estático para Pomodoro Self-Hosted",
+  "scripts": {
+    "start": "node src/server.js",
+    "dev": "node --watch src/server.js"
+  },
+  "engines": {
+    "node": ">=24"
+  },
+  "dependencies": {
+    "express": "^4.21.2"
+  }
+}
