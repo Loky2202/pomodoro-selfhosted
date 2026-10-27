@@ -5,6 +5,7 @@ import {
   Check,
   ChevronDown,
   Info,
+  ListChecks,
   Timer,
   User,
   X,
@@ -13,6 +14,7 @@ import {
 
 const NAV_ITEMS = [
   { id: 'timer', label: 'Temporizador', icon: Timer },
+  { id: 'tasks', label: 'Tareas', icon: ListChecks },
   { id: 'dashboard', label: 'Resumen', icon: ChartBar },
   { id: 'profiles', label: 'Perfiles', icon: User },
 ]

@@ -75,6 +75,19 @@ export function ChartBar(props) {
   )
 }
 
+export function ListChecks(props) {
+  return (
+    <Svg {...props}>
+      <path d="M9 6h12" />
+      <path d="M9 12h12" />
+      <path d="M9 18h12" />
+      <path d="m3 6 1.5 1.5L7 5" />
+      <path d="m3 12 1.5 1.5L7 11" />
+      <path d="m3 18 1.5 1.5L7 17" />
+    </Svg>
+  )
+}
+
 export function User(props) {
   return (
     <Svg {...props}>

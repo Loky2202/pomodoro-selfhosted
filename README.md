@@ -11,6 +11,7 @@ con **SQLite** como base de datos.
 - **Perfiles** separados (trabajo, estudio, personal…) con su propio color, tiempos e historial.
 - **Perfiles de sesión**: combinaciones de tiempos listas para usar (por ejemplo 50/10 o 25/5).
 - **Etiquetas por sesión** para saber en qué invertiste el tiempo.
+- **Lista de tareas** por perfil: crea, edita, elimina y completa actividades, y elige una tarea al iniciar una sesión de enfoque.
 - **Resumen** con tiempo de hoy, últimos 7 días, racha, media diaria, gráfica por día,
   distribución por etiqueta, mapa de calor de 90 días y horas más activas.
 - **Historial** de sesiones, borrado individual y exportación a **CSV**.
@@ -131,6 +132,8 @@ npm start
 | PUT/DELETE | `/api/profiles/:id` | Editar / eliminar perfil |
 | GET | `/api/profiles/:id/presets` | Perfiles de sesión del perfil |
 | POST/PUT/DELETE | `/api/presets…` | Gestionar perfiles de sesión |
+| GET | `/api/profiles/:id/tasks` | Tareas del perfil |
+| POST/PUT/DELETE | `/api/tasks…` | Gestionar tareas |
 | GET/POST | `/api/sessions` | Historial / registrar sesión |
 | DELETE | `/api/sessions/:id` | Eliminar una sesión |
 | GET | `/api/stats?profileId=1&days=90&today=YYYY-MM-DD` | Totales, series y agregados |

@@ -39,6 +39,11 @@ export const api = {
   updatePreset: (id, data) => request(`/presets/${id}`, { method: 'PUT', body: data }),
   deletePreset: (id) => request(`/presets/${id}`, { method: 'DELETE' }),
 
+  getTasks: (profileId) => request(`/profiles/${profileId}/tasks`),
+  createTask: (data) => request('/tasks', { method: 'POST', body: data }),
+  updateTask: (id, data) => request(`/tasks/${id}`, { method: 'PUT', body: data }),
+  deleteTask: (id) => request(`/tasks/${id}`, { method: 'DELETE' }),
+
   createSession: (data) => request('/sessions', { method: 'POST', body: data }),
   getSessions: (profileId, limit = 200) =>
     request(`/sessions?profileId=${profileId}&limit=${limit}`),

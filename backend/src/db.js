@@ -62,6 +62,18 @@ db.exec(`
 
   CREATE INDEX IF NOT EXISTS idx_sessions_profile_started
     ON sessions (profile_id, started_at);
+
+  CREATE TABLE IF NOT EXISTS tasks (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    profile_id INTEGER NOT NULL REFERENCES profiles(id) ON DELETE CASCADE,
+    title TEXT NOT NULL,
+    completed INTEGER NOT NULL DEFAULT 0,
+    created_at TEXT NOT NULL DEFAULT (datetime('now')),
+    completed_at TEXT
+  );
+
+  CREATE INDEX IF NOT EXISTS idx_tasks_profile
+    ON tasks (profile_id, completed, created_at);
 `)
 
 const sessionsTable = db

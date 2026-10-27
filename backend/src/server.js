@@ -7,6 +7,7 @@ import profilesRouter from './routes/profiles.js'
 import presetsRouter from './routes/presets.js'
 import sessionsRouter from './routes/sessions.js'
 import statsRouter from './routes/stats.js'
+import tasksRouter from './routes/tasks.js'
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 const app = express()
@@ -23,6 +24,7 @@ app.use('/api/profiles', profilesRouter)
 app.use('/api', presetsRouter)
 app.use('/api/sessions', sessionsRouter)
 app.use('/api/stats', statsRouter)
+app.use('/api', tasksRouter)
 
 app.use('/api', (_req, res) => {
   res.status(404).json({ error: 'Ruta no encontrada' })

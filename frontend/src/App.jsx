@@ -2,6 +2,7 @@ import { AppProvider, useApp } from './context'
 import { BottomNav, MobileHeader, Sidebar, ToastStack } from './components/Layout'
 import { RotateCcw, Timer } from './components/Icons'
 import TimerPage from './pages/TimerPage'
+import TasksPage from './pages/TasksPage'
 import DashboardPage from './pages/DashboardPage'
 import ProfilesPage from './pages/ProfilesPage'
 
@@ -71,6 +72,7 @@ function Shell() {
             <TimerPage key={activeProfile.id} active={view === 'timer'} />
           </div>
           {view === 'dashboard' && <DashboardPage />}
+          {view === 'tasks' && <TasksPage />}
           {view === 'profiles' && <ProfilesPage />}
         </div>
       </main>

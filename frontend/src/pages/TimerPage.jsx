@@ -19,6 +19,7 @@ import {
   ArrowRight,
   Coffee,
   Flame,
+  ListChecks,
   Pause,
   Play,
   RotateCcw,
@@ -92,12 +93,18 @@ export default function TimerPage({ active = true }) {
     statsLoading,
     refreshStats,
     pushToast,
+    tasks,
+    tasksLoading,
+    taskToStart,
+    clearTaskToStart,
+    navigate,
   } = useApp()
   const profileId = activeProfile.id
 
   const storageKey = `pomodoro.timer.${profileId}`
   const [presetId, setPresetId] = useLocalStorage(`pomodoro.preset.${profileId}`, null)
   const [label, setLabel] = useLocalStorage(`pomodoro.label.${profileId}`, '')
+  const [selectedTaskId, setSelectedTaskId] = useState('')
 
   const selectedPreset = presets.find((preset) => preset.id === presetId) ?? null
 
@@ -370,6 +377,19 @@ export default function TimerPage({ active = true }) {
   }, [mode])
 
   useEffect(() => {
+    if (!taskToStart) return
+    setSelectedTaskId(String(taskToStart.id))
+    setLabel(taskToStart.title.slice(0, 80))
+    clearTaskToStart()
+  }, [taskToStart, setLabel, clearTaskToStart])
+
+  useEffect(() => {
+    if (!selectedTaskId || tasksLoading) return
+    const current = tasks.find((task) => task.id === Number(selectedTaskId))
+    if (!current || current.completed) setSelectedTaskId('')
+  }, [tasks, tasksLoading, selectedTaskId])
+
+  useEffect(() => {
     cycleRef.current = cycle
   }, [cycle])
 
@@ -578,6 +598,18 @@ export default function TimerPage({ active = true }) {
   const weekSeconds = stats?.totals?.weekSeconds ?? 0
   const streak = stats?.streak ?? 0
   const labelValue = typeof label === 'string' ? label : ''
+  const pendingTasks = tasks.filter((task) => !task.completed)
+  const selectedTask = pendingTasks.find((task) => task.id === Number(selectedTaskId)) ?? null
+
+  function handleTaskSelect(value) {
+    setSelectedTaskId(value)
+    if (!value) {
+      if (selectedTask && labelValue === selectedTask.title.slice(0, 80)) setLabel('')
+      return
+    }
+    const task = pendingTasks.find((item) => item.id === Number(value))
+    if (task) setLabel(task.title.slice(0, 80))
+  }
 
   return (
     <div className="page timer-page">
@@ -703,18 +735,56 @@ export default function TimerPage({ active = true }) {
               </span>
             </div>
 
+            <div className="task-picker">
+              <span className="field-label">Tarea de esta sesión</span>
+              <div className="task-picker-row">
+                <select
+                  className="input"
+                  value={selectedTaskId}
+                  onChange={(event) => handleTaskSelect(event.target.value)}
+                  aria-label="Tarea de esta sesión"
+                >
+                  <option value="">Sin tarea seleccionada</option>
+                  {pendingTasks.map((task) => (
+                    <option key={task.id} value={task.id}>
+                      {task.title}
+                    </option>
+                  ))}
+                </select>
+                <button
+                  type="button"
+                  className="btn btn-ghost btn-sm"
+                  onClick={() => navigate('tasks')}
+                >
+                  <ListChecks size={15} />
+                  Tareas
+                </button>
+              </div>
+              {!tasksLoading && pendingTasks.length === 0 && (
+                <span className="field-hint">
+                  No tienes tareas pendientes. Créalas en la sección Tareas.
+                </span>
+              )}
+            </div>
+
             <label className="task-input">
               <input
                 type="text"
                 placeholder="Ej. Diseño de la landing"
                 value={labelValue}
-                onChange={(event) => setLabel(event.target.value.slice(0, 80))}
+                onChange={(event) => {
+                  setLabel(event.target.value.slice(0, 80))
+                  if (selectedTaskId) setSelectedTaskId('')
+                }}
                 maxLength={80}
               />
               {labelValue && (
                 <button
                   type="button"
-                  onClick={() => setLabel('')}
+                  onClick={() => {
+                    setLabel('')
+                    setSelectedTaskId('')
+                  }}
                   aria-label="Borrar etiqueta"
                 >
                   <X size={15} />

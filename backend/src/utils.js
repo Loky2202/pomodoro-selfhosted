@@ -86,3 +86,14 @@ export function sessionJson(row) {
     createdAt: row.created_at,
   }
 }
+
+export function taskJson(row) {
+  return {
+    id: row.id,
+    profileId: row.profile_id,
+    title: row.title,
+    completed: Boolean(row.completed),
+    createdAt: row.created_at,
+    completedAt: row.completed_at,
+  }
+}

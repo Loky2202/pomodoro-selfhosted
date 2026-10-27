@@ -12,7 +12,7 @@ import { localDayKey } from './utils'
 
 const AppContext = createContext(null)
 
-const VIEWS = ['timer', 'dashboard', 'profiles']
+const VIEWS = ['timer', 'tasks', 'dashboard', 'profiles']
 
 function initialView() {
   const hash = window.location.hash.replace('#', '')
@@ -33,6 +33,9 @@ export function AppProvider({ children }) {
   const [stats, setStats] = useState(null)
   const [statsLoading, setStatsLoading] = useState(true)
   const [statsVersion, setStatsVersion] = useState(0)
+  const [tasks, setTasks] = useState([])
+  const [tasksLoading, setTasksLoading] = useState(false)
+  const [taskToStart, setTaskToStart] = useState(null)
   const [toasts, setToasts] = useState([])
   const [loading, setLoading] = useState(true)
   const [loadError, setLoadError] = useState(null)
@@ -133,6 +136,42 @@ export function AppProvider({ children }) {
     return list
   }, [activeProfile])
 
+  useEffect(() => {
+    if (!activeProfile) {
+      setTasks([])
+      setTasksLoading(false)
+      return undefined
+    }
+    let cancelled = false
+    setTasksLoading(true)
+    api
+      .getTasks(activeProfile.id)
+      .then((list) => {
+        if (!cancelled) setTasks(list)
+      })
+      .catch((error) => {
+        if (!cancelled) pushToast(error.message, 'error')
+      })
+      .finally(() => {
+        if (!cancelled) setTasksLoading(false)
+      })
+    return () => {
+      cancelled = true
+    }
+  }, [activeProfile?.id, pushToast])
+
+  const refreshTasks = useCallback(async () => {
+    if (!activeProfile) {
+      setTasks([])
+      return []
+    }
+    const list = await api.getTasks(activeProfile.id)
+    setTasks(list)
+    return list
+  }, [activeProfile])
+
+  const clearTaskToStart = useCallback(() => setTaskToStart(null), [])
+
   const refreshStats = useCallback(() => {
     setStatsVersion((value) => value + 1)
   }, [])
@@ -173,6 +212,15 @@ export function AppProvider({ children }) {
     [setView]
   )
 
+  const focusTask = useCallback(
+    (task) => {
+      if (!task) return
+      setTaskToStart(task)
+      navigate('timer')
+    },
+    [navigate]
+  )
+
   useEffect(() => {
     const onHashChange = () => {
       const hash = window.location.hash.replace('#', '')
@@ -190,6 +238,12 @@ export function AppProvider({ children }) {
     presets,
     refreshPresets,
     refreshProfiles,
+    tasks,
+    tasksLoading,
+    refreshTasks,
+    taskToStart,
+    clearTaskToStart,
+    focusTask,
     stats,
     statsLoading,
     refreshStats,
