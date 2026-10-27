@@ -84,7 +84,7 @@ function TimerRing({ progress, accent }) {
   )
 }
 
-export default function TimerPage() {
+export default function TimerPage({ active = true }) {
   const {
     activeProfile,
     presets,
@@ -275,6 +275,10 @@ export default function TimerPage() {
         startedAtRef.current = new Date(now).toISOString()
       }
       endAtRef.current = now + seconds * 1000
+    }
+
+    if (typeof Notification !== 'undefined' && Notification.permission === 'default') {
+      Notification.requestPermission().catch(() => {})
     }
 
     finishingRef.current = false
@@ -536,6 +540,7 @@ export default function TimerPage() {
   }, [status, remaining, mode])
 
   useEffect(() => {
+    if (!active) return undefined
     const onKeyDown = (event) => {
       const tag = event.target?.tagName
       if (['INPUT', 'TEXTAREA', 'SELECT', 'BUTTON'].includes(tag)) return
@@ -549,7 +554,7 @@ export default function TimerPage() {
     }
     window.addEventListener('keydown', onKeyDown)
     return () => window.removeEventListener('keydown', onKeyDown)
-  }, [startOrResume, resetTimer])
+  }, [startOrResume, resetTimer, active])
 
   const totalSeconds = status === 'idle' ? durationFor(mode) : plannedRef.current || durationFor(mode)
   const progress = totalSeconds > 0 ? remaining / totalSeconds : 1

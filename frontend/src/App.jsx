@@ -67,7 +67,9 @@ function Shell() {
       <main className="main">
         <MobileHeader />
         <div className="main-inner">
-          {view === 'timer' && <TimerPage key={activeProfile.id} />}
+          <div hidden={view !== 'timer'}>
+            <TimerPage key={activeProfile.id} active={view === 'timer'} />
+          </div>
           {view === 'dashboard' && <DashboardPage />}
           {view === 'profiles' && <ProfilesPage />}
         </div>

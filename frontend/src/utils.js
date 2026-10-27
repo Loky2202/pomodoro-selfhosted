@@ -193,7 +193,16 @@ export function playChime() {
 export function notify(title, body) {
   if (typeof Notification === 'undefined' || Notification.permission !== 'granted') return
   try {
-    new Notification(title, { body, icon: '/favicon.svg' })
+    const notification = new Notification(title, {
+      body,
+      icon: '/favicon.svg',
+      tag: 'pomodoro-timer',
+      requireInteraction: true,
+    })
+    notification.onclick = () => {
+      window.focus()
+      notification.close()
+    }
   } catch {
     // Algunos navegadores móviles no permiten notificaciones desde la página.
   }
