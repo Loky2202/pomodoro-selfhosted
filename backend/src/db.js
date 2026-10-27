@@ -46,7 +46,7 @@ db.exec(`
     profile_id INTEGER NOT NULL REFERENCES profiles(id) ON DELETE CASCADE,
     preset_id INTEGER REFERENCES presets(id) ON DELETE SET NULL,
     label TEXT NOT NULL DEFAULT '',
-    mode TEXT NOT NULL CHECK (mode IN ('focus', 'short', 'long')),
+    mode TEXT NOT NULL CHECK (mode IN ('focus', 'short', 'long', 'stopwatch')),
     planned_seconds INTEGER NOT NULL DEFAULT 0,
     actual_seconds INTEGER NOT NULL DEFAULT 0,
     status TEXT NOT NULL CHECK (status IN ('completed', 'cancelled')),
@@ -63,6 +63,43 @@ db.exec(`
   CREATE INDEX IF NOT EXISTS idx_sessions_profile_started
     ON sessions (profile_id, started_at);
 `)
+
+const sessionsTable = db
+  .prepare("SELECT sql FROM sqlite_master WHERE type='table' AND name='sessions'")
+  .get()
+
+if (sessionsTable && !sessionsTable.sql.includes('stopwatch')) {
+  console.log('Migrando base de datos para soportar el modo stopwatch...')
+  db.exec(`
+    ALTER TABLE sessions RENAME TO sessions_old;
+
+    CREATE TABLE sessions (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      profile_id INTEGER NOT NULL REFERENCES profiles(id) ON DELETE CASCADE,
+      preset_id INTEGER REFERENCES presets(id) ON DELETE SET NULL,
+      label TEXT NOT NULL DEFAULT '',
+      mode TEXT NOT NULL CHECK (mode IN ('focus', 'short', 'long', 'stopwatch')),
+      planned_seconds INTEGER NOT NULL DEFAULT 0,
+      actual_seconds INTEGER NOT NULL DEFAULT 0,
+      status TEXT NOT NULL CHECK (status IN ('completed', 'cancelled')),
+      started_at TEXT NOT NULL,
+      ended_at TEXT NOT NULL,
+      day TEXT NOT NULL,
+      hour INTEGER NOT NULL DEFAULT 0,
+      created_at TEXT NOT NULL DEFAULT (datetime('now'))
+    );
+
+    INSERT INTO sessions SELECT * FROM sessions_old;
+
+    DROP TABLE sessions_old;
+
+    CREATE INDEX IF NOT EXISTS idx_sessions_profile_day
+      ON sessions (profile_id, day);
+
+    CREATE INDEX IF NOT EXISTS idx_sessions_profile_started
+      ON sessions (profile_id, started_at);
+  `)
+}
 
 const profileCount = db.prepare('SELECT COUNT(*) AS total FROM profiles').get().total
 

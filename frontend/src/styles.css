@@ -1494,14 +1494,30 @@ input:focus-visible,
 .heat-cell {
   border-radius: 4px;
   min-width: 6px;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  transition: transform 120ms ease, box-shadow 120ms ease;
+}
+
+.heat-cell:not(.is-empty):hover {
+  transform: scale(1.15);
+  z-index: 1;
 }
 
 .heat-cell.is-empty {
   background: transparent;
+  cursor: default;
 }
 
 .heat-cell.is-today {
   box-shadow: 0 0 0 1.5px rgba(255, 255, 255, 0.55);
+}
+
+.heat-cell.is-selected {
+  box-shadow: 0 0 0 2px #fff;
+  transform: scale(1.15);
+  z-index: 2;
 }
 
 .heatmap-footer {
@@ -1660,6 +1676,12 @@ input:focus-visible,
   color: #c4b5fd;
   background: rgba(139, 92, 246, 0.09);
   border-color: rgba(139, 92, 246, 0.17);
+}
+
+.mode-stopwatch {
+  color: #f7c15c;
+  background: rgba(245, 165, 36, 0.09);
+  border-color: rgba(245, 165, 36, 0.18);
 }
 
 .session-duration {

@@ -36,7 +36,7 @@ router.get('/', (req, res) => {
          COALESCE(SUM(CASE WHEN day >= ? AND status = 'completed' THEN 1 ELSE 0 END), 0) AS week_completed,
          COALESCE(SUM(CASE WHEN day = ? AND status = 'completed' THEN 1 ELSE 0 END), 0) AS today_completed
        FROM sessions
-       WHERE profile_id = ? AND mode = 'focus'`
+       WHERE profile_id = ? AND mode IN ('focus', 'stopwatch')`
     )
     .get(monthStart, weekStart, today, monthStart, weekStart, today, profileId)
 
@@ -46,7 +46,7 @@ router.get('/', (req, res) => {
               COALESCE(SUM(actual_seconds), 0) AS seconds,
               COALESCE(SUM(CASE WHEN status = 'completed' THEN 1 ELSE 0 END), 0) AS completed
        FROM sessions
-       WHERE profile_id = ? AND mode = 'focus' AND day >= ? AND day <= ?
+       WHERE profile_id = ? AND mode IN ('focus', 'stopwatch') AND day >= ? AND day <= ?
        GROUP BY day
        ORDER BY day ASC`
     )
@@ -70,7 +70,7 @@ router.get('/', (req, res) => {
               COALESCE(SUM(actual_seconds), 0) AS seconds,
               COUNT(*) AS sessions
        FROM sessions
-       WHERE profile_id = ? AND mode = 'focus' AND day >= ? AND day <= ?
+       WHERE profile_id = ? AND mode IN ('focus', 'stopwatch') AND day >= ? AND day <= ?
              AND actual_seconds > 0
        GROUP BY COALESCE(NULLIF(TRIM(label), ''), 'Sin etiqueta')
        ORDER BY seconds DESC`
@@ -81,7 +81,7 @@ router.get('/', (req, res) => {
     .prepare(
       `SELECT hour, COALESCE(SUM(actual_seconds), 0) AS seconds
        FROM sessions
-       WHERE profile_id = ? AND mode = 'focus' AND day >= ? AND day <= ?
+       WHERE profile_id = ? AND mode IN ('focus', 'stopwatch') AND day >= ? AND day <= ?
        GROUP BY hour
        ORDER BY hour ASC`
     )
@@ -96,7 +96,7 @@ router.get('/', (req, res) => {
     .prepare(
       `SELECT DISTINCT day
        FROM sessions
-       WHERE profile_id = ? AND mode = 'focus' AND status = 'completed'
+       WHERE profile_id = ? AND mode IN ('focus', 'stopwatch') AND status = 'completed'
        ORDER BY day DESC
        LIMIT 500`
     )

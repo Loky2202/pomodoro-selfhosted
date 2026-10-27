@@ -137,7 +137,7 @@ function heatLevel(seconds) {
 
 const HEAT_ALPHA = [0, 0.22, 0.4, 0.62, 0.9]
 
-export function Heatmap({ data, accent = '#ff7a66', today }) {
+export function Heatmap({ data, accent = '#ff7a66', today, onSelectDay, selectedDay }) {
   const sorted = [...data].sort((a, b) => a.day.localeCompare(b.day))
   if (sorted.length === 0) return null
 
@@ -175,9 +175,12 @@ export function Heatmap({ data, accent = '#ff7a66', today }) {
                 return <span key={`empty-${weekIndex}-${dayIndex}`} className="heat-cell is-empty" />
               }
               return (
-                <span
+                <button
                   key={cell.day}
-                  className={`heat-cell ${cell.day === today ? 'is-today' : ''}`}
+                  type="button"
+                  className={`heat-cell ${cell.day === today ? 'is-today' : ''} ${
+                    cell.day === selectedDay ? 'is-selected' : ''
+                  }`}
                   style={{
                     background:
                       cell.level === 0
@@ -189,6 +192,7 @@ export function Heatmap({ data, accent = '#ff7a66', today }) {
                   title={`${dayAndMonth(cell.day)} · ${formatDuration(cell.seconds, {
                     long: true,
                   })}`}
+                  onClick={() => onSelectDay?.(cell.day)}
                 />
               )
             })

@@ -11,7 +11,7 @@ import {
 
 const router = Router()
 
-const MODES = new Set(['focus', 'short', 'long'])
+const MODES = new Set(['focus', 'short', 'long', 'stopwatch'])
 const STATUSES = new Set(['completed', 'cancelled'])
 
 router.get('/', (req, res) => {

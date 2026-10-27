@@ -120,19 +120,22 @@ export default function TimerPage() {
   )
   const [remaining, setRemaining] = useState(() => {
     const fallback =
-      initialMode === 'focus'
-        ? durations.focus
-        : initialMode === 'short'
-          ? durations.short
-          : durations.long
+      initialMode === 'stopwatch'
+        ? 0
+        : initialMode === 'focus'
+          ? durations.focus
+          : initialMode === 'short'
+            ? durations.short
+            : durations.long
     const saved = Number(restored?.remaining)
-    if (Number.isFinite(saved) && saved > 0 && saved <= fallback) return saved
+    if (Number.isFinite(saved) && (initialMode === 'stopwatch' ? saved >= 0 : saved > 0 && saved <= fallback)) return saved
     return fallback
   })
 
   const modeRef = useRef(initialMode)
   const plannedRef = useRef(remaining)
   const startedAtRef = useRef(null)
+  const stopwatchStartRef = useRef(null)
   const endAtRef = useRef(null)
   const cycleRef = useRef(cycle)
   const intervalRef = useRef(durations.interval)
@@ -141,11 +144,13 @@ export default function TimerPage() {
 
   const durationFor = useCallback(
     (targetMode) =>
-      targetMode === 'focus'
-        ? durations.focus
-        : targetMode === 'short'
-          ? durations.short
-          : durations.long,
+      targetMode === 'stopwatch'
+        ? 0
+        : targetMode === 'focus'
+          ? durations.focus
+          : targetMode === 'short'
+            ? durations.short
+            : durations.long,
     [durations]
   )
 
@@ -233,49 +238,78 @@ export default function TimerPage() {
   }, [activeProfile, applyMode, logSession])
 
   const startOrResume = useCallback(() => {
+    const isStopwatch = modeRef.current === 'stopwatch'
+    const now = Date.now()
+
     if (status === 'running') {
-      const left = Math.max(0, Math.ceil((endAtRef.current - Date.now()) / 1000))
+      if (isStopwatch) {
+        const start = stopwatchStartRef.current || now
+        const elapsed = Math.floor((now - start) / 1000)
+        const total = plannedRef.current + elapsed
+        setRemaining(total)
+        plannedRef.current = total
+        stopwatchStartRef.current = null
+      } else {
+        const left = Math.max(0, Math.ceil((endAtRef.current - now) / 1000))
+        setRemaining(left)
+      }
+
       endAtRef.current = null
-      setRemaining(left)
       setStatus('paused')
       return
     }
 
-    const seconds = Math.max(1, status === 'paused' ? remaining : durationFor(mode))
-    if (status !== 'paused') {
-      plannedRef.current = seconds
-      setRemaining(seconds)
+    if (isStopwatch) {
+      if (!startedAtRef.current) {
+        startedAtRef.current = new Date(now).toISOString()
+      }
+      plannedRef.current = remaining
+      stopwatchStartRef.current = now
+    } else {
+      const seconds = Math.max(1, status === 'paused' ? remaining : durationFor(mode))
+      if (status !== 'paused') {
+        plannedRef.current = seconds
+        setRemaining(seconds)
+      }
+      if (!startedAtRef.current) {
+        startedAtRef.current = new Date(now).toISOString()
+      }
+      endAtRef.current = now + seconds * 1000
     }
-    if (!startedAtRef.current) startedAtRef.current = new Date().toISOString()
 
-    const now = Date.now()
-    endAtRef.current = now + seconds * 1000
     finishingRef.current = false
     setStatus('running')
   }, [status, remaining, mode, durationFor])
 
   const resetTimer = useCallback(() => {
-    const planned = plannedRef.current || durationFor(mode)
-    const left =
-      status === 'running' && endAtRef.current
-        ? Math.max(0, Math.ceil((endAtRef.current - Date.now()) / 1000))
-        : remaining
-    const elapsed = Math.max(0, planned - left)
+    const isStopwatch = mode === 'stopwatch'
+    let elapsed = isStopwatch ? remaining : Math.max(0, plannedRef.current - remaining)
 
-    if (startedAtRef.current && elapsed >= 30) {
+    if (status === 'running') {
+      if (isStopwatch) {
+        const start = stopwatchStartRef.current
+        elapsed = plannedRef.current + (start ? Math.floor((Date.now() - start) / 1000) : 0)
+      } else {
+        const left = Math.max(0, Math.ceil((endAtRef.current - Date.now()) / 1000))
+        elapsed = Math.max(0, plannedRef.current - left)
+      }
+    }
+
+    if (startedAtRef.current && elapsed >= (isStopwatch ? 1 : 30)) {
       logSession({
         logMode: mode,
-        sessionStatus: 'cancelled',
-        plannedSeconds: planned,
+        sessionStatus: isStopwatch ? 'completed' : 'cancelled',
+        plannedSeconds: isStopwatch ? elapsed : plannedRef.current,
         actualSeconds: elapsed,
         startedAt: startedAtRef.current,
         endedAt: new Date().toISOString(),
       })
-      pushToast('Sesión guardada como cancelada', 'info')
+      pushToast(isStopwatch ? 'Tiempo guardado' : 'Sesión guardada como cancelada', isStopwatch ? 'success' : 'info')
     }
 
     endAtRef.current = null
     startedAtRef.current = null
+    stopwatchStartRef.current = null
     finishingRef.current = false
     const seconds = durationFor(mode)
     plannedRef.current = seconds
@@ -287,17 +321,18 @@ export default function TimerPage() {
     (nextMode) => {
       if (nextMode === mode || status === 'running') return
       if (status === 'paused' && startedAtRef.current) {
-        const elapsed = Math.max(0, plannedRef.current - remaining)
-        if (elapsed >= 30) {
+        const isStopwatch = mode === 'stopwatch'
+        const elapsed = isStopwatch ? remaining : Math.max(0, plannedRef.current - remaining)
+        if (elapsed >= (isStopwatch ? 1 : 30)) {
           logSession({
             logMode: mode,
-            sessionStatus: 'cancelled',
-            plannedSeconds: plannedRef.current,
+            sessionStatus: isStopwatch ? 'completed' : 'cancelled',
+            plannedSeconds: isStopwatch ? elapsed : plannedRef.current,
             actualSeconds: elapsed,
             startedAt: startedAtRef.current,
             endedAt: new Date().toISOString(),
           })
-          pushToast('Sesión guardada como cancelada', 'info')
+          pushToast(isStopwatch ? 'Tiempo guardado' : 'Sesión guardada como cancelada', isStopwatch ? 'success' : 'info')
         }
       }
       startedAtRef.current = null
@@ -365,6 +400,7 @@ export default function TimerPage() {
           endAt: endAtRef.current,
           startedAt: startedAtRef.current,
           planned: plannedRef.current,
+          stopwatchStart: stopwatchStartRef.current,
           cycle,
         })
       )
@@ -385,6 +421,31 @@ export default function TimerPage() {
     const plannedSeconds =
       Number.isFinite(savedPlanned) && savedPlanned > 0 ? savedPlanned : fallback
     const savedRemaining = Number(restored.remaining)
+
+    if (savedMode === 'stopwatch') {
+      modeRef.current = savedMode
+      plannedRef.current = Number(restored.planned) || 0
+      startedAtRef.current = restored.startedAt || null
+      setMode(savedMode)
+
+      if (restored.status === 'running' && restored.stopwatchStart) {
+        stopwatchStartRef.current = Number(restored.stopwatchStart)
+        const elapsed = Math.floor((Date.now() - stopwatchStartRef.current) / 1000)
+        setRemaining(plannedRef.current + elapsed)
+        setStatus('running')
+        return
+      }
+
+      if (restored.status === 'paused') {
+        setRemaining(savedRemaining)
+        setStatus('paused')
+        return
+      }
+
+      setRemaining(0)
+      setStatus('idle')
+      return
+    }
 
     if (restored.status === 'running' && Number.isFinite(Number(restored.endAt))) {
       const endAt = Number(restored.endAt)
@@ -437,15 +498,28 @@ export default function TimerPage() {
   }, [])
 
   useEffect(() => {
-    if (status !== 'running' || !endAtRef.current) return undefined
+    if (status !== 'running') return undefined
+
     const update = () => {
-      const left = Math.max(0, Math.ceil((endAtRef.current - Date.now()) / 1000))
-      setRemaining(left)
-      if (left <= 0 && !finishingRef.current) {
-        finishingRef.current = true
-        handleComplete()
+      const now = Date.now()
+      const isStopwatch = modeRef.current === 'stopwatch'
+
+      if (isStopwatch) {
+        const start = stopwatchStartRef.current
+        if (!start) return
+        const elapsed = Math.floor((now - start) / 1000)
+        setRemaining(plannedRef.current + elapsed)
+      } else {
+        if (!endAtRef.current) return
+        const left = Math.max(0, Math.ceil((endAtRef.current - now) / 1000))
+        setRemaining(left)
+        if (left <= 0 && !finishingRef.current) {
+          finishingRef.current = true
+          handleComplete()
+        }
       }
     }
+
     update()
     const interval = window.setInterval(update, 250)
     return () => window.clearInterval(interval)
@@ -479,14 +553,17 @@ export default function TimerPage() {
 
   const totalSeconds = status === 'idle' ? durationFor(mode) : plannedRef.current || durationFor(mode)
   const progress = totalSeconds > 0 ? remaining / totalSeconds : 1
-  const modeAccent = mode === 'focus' ? activeProfile.color : '#4fd1c5'
+  const modeAccent =
+    mode === 'focus' ? activeProfile.color : mode === 'stopwatch' ? '#f5a524' : '#4fd1c5'
   const isRunning = status === 'running'
   const isPaused = status === 'paused'
 
   const statusText = isRunning
     ? mode === 'focus'
       ? 'Concéntrate en una sola cosa'
-      : 'Respira y descansa'
+      : mode === 'stopwatch'
+        ? 'Midiendo el tiempo...'
+        : 'Respira y descansa'
     : isPaused
       ? 'En pausa'
       : 'Listo para empezar'
@@ -533,6 +610,7 @@ export default function TimerPage() {
                 { value: 'focus', label: 'Enfoque' },
                 { value: 'short', label: 'Descanso corto' },
                 { value: 'long', label: 'Descanso largo' },
+                { value: 'stopwatch', label: 'Cronómetro' },
               ]}
               value={mode}
               onChange={changeMode}
@@ -552,7 +630,7 @@ export default function TimerPage() {
             <TimerRing progress={progress} accent={modeAccent} />
             <div className="ring-content">
               <span className="ring-mode" style={{ color: modeAccent }}>
-                {mode === 'focus' ? 'Enfoque' : 'Descanso'}
+                {mode === 'focus' ? 'Enfoque' : mode === 'stopwatch' ? 'Cronómetro' : 'Descanso'}
               </span>
               <strong className="ring-time">{formatClock(remaining)}</strong>
               <span className="ring-sub">{statusText}</span>
@@ -578,7 +656,7 @@ export default function TimerPage() {
               <span>{isRunning ? 'Pausar' : isPaused ? 'Reanudar' : 'Empezar'}</span>
             </button>
 
-            {mode !== 'focus' ? (
+            {mode === 'short' || mode === 'long' ? (
               <button
                 className="round-button"
                 onClick={skipBreak}

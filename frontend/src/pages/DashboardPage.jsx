@@ -8,11 +8,13 @@ import {
   formatDuration,
   formatTime,
   localDayKey,
+  longDate,
+  parseDay,
   relativeDay,
   sessionLabel,
 } from '../utils'
 import { EmptyState, PageHeader } from '../components/Layout'
-import { ConfirmDialog, Segmented } from '../components/Form'
+import { ConfirmDialog, Modal, Segmented } from '../components/Form'
 import { BarChart, DonutChart, Heatmap, HourChart } from '../components/Charts'
 import {
   ArrowRight,
@@ -54,6 +56,9 @@ export default function DashboardPage() {
   const [pendingDelete, setPendingDelete] = useState(null)
   const [deleting, setDeleting] = useState(false)
   const [exporting, setExporting] = useState(false)
+  const [selectedDay, setSelectedDay] = useState(null)
+  const [daySessions, setDaySessions] = useState([])
+  const [dayLoading, setDayLoading] = useState(false)
 
   const accent = activeProfile.color
   const today = stats?.range?.to ?? localDayKey()
@@ -105,6 +110,24 @@ export default function DashboardPage() {
       pushToast(error.message, 'error')
     } finally {
       setDeleting(false)
+    }
+  }
+
+  async function handleSelectDay(day) {
+    if (selectedDay === day) {
+      setSelectedDay(null)
+      return
+    }
+    setSelectedDay(day)
+    setDayLoading(true)
+    try {
+      const data = await api.getSessions(activeProfile.id, 1000)
+      setDaySessions(data.sessions.filter((session) => session.day === day))
+    } catch (error) {
+      pushToast(error.message, 'error')
+      setDaySessions([])
+    } finally {
+      setDayLoading(false)
     }
   }
 
@@ -244,7 +267,13 @@ export default function DashboardPage() {
           {loading ? (
             <ChartSkeleton />
           ) : hasData ? (
-            <Heatmap data={series} accent={accent} today={today} />
+            <Heatmap
+              data={series}
+              accent={accent}
+              today={today}
+              onSelectDay={handleSelectDay}
+              selectedDay={selectedDay}
+            />
           ) : (
             <EmptyState icon={Flame} title="Aún no hay constancia que mostrar">
               Tus días de enfoque aparecerán aquí.
@@ -340,6 +369,62 @@ export default function DashboardPage() {
           )}
         </section>
       </div>
+
+      {selectedDay && (
+        <Modal
+          open={Boolean(selectedDay)}
+          onClose={() => setSelectedDay(null)}
+          title={longDate(parseDay(selectedDay))}
+          subtitle="Detalle del día"
+        >
+          {dayLoading ? (
+            <p className="hint">Cargando sesiones…</p>
+          ) : daySessions.length === 0 ? (
+            <EmptyState icon={Clock} title="Sin actividad este día">
+              No se registraron sesiones en esta fecha.
+            </EmptyState>
+          ) : (
+            <div>
+              <div className="chart-summary" style={{ marginBottom: '16px' }}>
+                <strong>
+                  {formatDuration(daySessions.reduce((sum, s) => sum + s.actualSeconds, 0))}
+                </strong>
+                <span>tiempo total registrado</span>
+              </div>
+              <ul className="session-list">
+                {daySessions.map((session) => (
+                  <li key={session.id} className="session-row">
+                    <span
+                      className={`session-state ${session.status}`}
+                      title={session.status === 'completed' ? 'Completada' : 'Cancelada'}
+                    >
+                      {session.status === 'completed' ? (
+                        <CircleCheck size={17} />
+                      ) : (
+                        <CircleX size={17} />
+                      )}
+                    </span>
+                    <div className="session-main">
+                      <strong>
+                        {session.mode === 'focus' || session.mode === 'stopwatch'
+                          ? sessionLabel(session)
+                          : MODES[session.mode]?.label}
+                      </strong>
+                      <span>{formatTime(session.startedAt)}</span>
+                    </div>
+                    <span className={`mode-badge mode-${session.mode}`}>
+                      {MODES[session.mode]?.label}
+                    </span>
+                    <span className="session-duration">
+                      {formatDuration(session.actualSeconds)}
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+        </Modal>
+      )}
 
       <ConfirmDialog
         open={Boolean(pendingDelete)}

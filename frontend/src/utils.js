@@ -14,6 +14,11 @@ export const MODES = {
     longLabel: 'Descanso largo',
     shortLabel: 'Descanso largo',
   },
+  stopwatch: {
+    label: 'Cronómetro',
+    longLabel: 'Tiempo indefinido',
+    shortLabel: 'Tiempo',
+  },
 }
 
 export function pad(value) {
